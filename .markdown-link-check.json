@@ -1,0 +1,10 @@
+{
+  "ignorePatterns": [
+    {
+      "pattern": "^(https?://)?localhost"
+    }
+  ],
+  "timeout": "20s",
+  "aliveStatusCodes": [200, 301]
+}
+

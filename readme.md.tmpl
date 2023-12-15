@@ -1,0 +1,72 @@
+# Сервис {{ .SvcName }}
+
+Файлы получены из ветки: {{ .Branch }}
+
+Ссылка на репозиторий: {{ .Url }}
+
+Содержание:
+
+1. `dependencies_sources.tgz` - архив с исходными кодами зависимостей
+
+2. `service_name.tar.gz` - архив с исходным кодом самого сервиса
+
+3. `gradle_dependencies.tgz` - все что необходимо для сборки, зависимости, бинарные файлы Gradle и т.п.
+
+4. `docker_images.tgz` - docker образы для сборки
+
+5. `gradle_configs.tgz` - конфигурационные файлы Gradle для оффлайн сборки и локального кеша.
+
+# Сборка сервиса
+
+1. Распаковываем архив с исходными кодами сервиса
+
+2. В папку из п.1 переносим содержимое архива `gradle_dependencies.tgz`. Аналогичное проделываем с конфигурационными файлами из архива `gradle_configs.tgz`.
+
+3. В папке `docker_images` проверяем наличие образа для сборки и импортируем его в систему командой `docker image load -i filename`
+
+4. Смотрим корректную команду для запуска сборки в файле `Dockerfile.pgs2`, например `gradle clean shadowJar`
+
+5. Запускаем сборку с учетом папки с локальным кэшем, docker образом для сборки, offline режимом работы и заменой команды gradle на gradlew, например `docker run --user 1000 -v ${PWD}:/home/gradle --rm gradle:7.4.1-jdk11 bash -c " export GRADLE_USER_HOME=gradle_dependencies && gradle clean shadowJar -g gradle_dependencies --offline --no-build-cache -i"`
+
+Т.е. важна команда `export GRADLE_USER_HOME=gradle_dependencies` и ключ `-g gradle_dependencies`
+
+Ключ "-i" выводит полнуб информацию о сборке
+
+Ключ "--offline" обязателен и обеспечивает сборку без доступа в интернет
+
+Ключ "--no-build-cache" желателен, позволяет не использовать кеш прошлых сборок.
+
+6. Сборка не требует наличия соединения с интернет, но требует установленного docker на ПК. Результат сборки будет в папке `build`
+
+7. Все архивы, '.jar' и '.pom' файлы имеют одноименный файл '.gost' с хешем по алгоритму ГОСТ 34.11. Проверять корректность хеш-суммы следует утилитой cpverify от [CryptoPro](https://www.cryptopro.ru/faq/how-to-checksum).
+
+# Список зависимостей
+
+{{ range .Deps }}
+{{ . }}
+{{ end}}
+
+# Не найденные зависимости (ни в git ни в maven-central)
+
+{{ range .Deps_unknown }}
+{{ . }}
+{{ end}}
+
+# Зависимости без исходных кодов (с проверкой наличия .jar)
+
+{{ range .Deps_no_sources }}
+{{ . }}
+{{ end}}
+
+# Зависимости без нужной версии. Библиотеки, исходный код которых есть в Git, но нет тега с нужной версией
+
+{{ range .Deps_no_ver }}
+{{ . }}
+{{ end}}
+
+# Зависимости sx.miroservices, исходный код которых не найден в Git
+
+{{ range .Deps_sx_unknown }}
+{{ . }}
+{{ end}}
+

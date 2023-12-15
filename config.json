@@ -1,0 +1,28 @@
+{
+"gitlab_api_host" : "https://git.gosuslugi.local/api/v4",
+"output_dir" : "result",
+"service_list" : [
+	"idm"
+],
+"group_id": "1742",
+"branch":"dev",
+"cache":true,
+"cache_dir": "cache",
+"archive_format":"tgz",
+"maven_url": "https://repo1.maven.org/maven2",
+"plugins_url": "https://plugins.gradle.org/m2",
+"max_parallelism": 2,
+"readme_template":"readme.md.tmpl",
+"rtl_search_repo_id": "2706",
+"upload_to_nexus": true,
+"nexus_url":"http://10.65.133.229:8081",
+"nexus_path":"/repository/pgs2-sources/services",
+"nexus_maven_url": "http://10.65.133.229:8081/repository/maven-public/",
+"nexus_force_add_to_gradle": false,
+"nexus_auto_add_to_gradle": true,
+"proxy":false,
+"proxy_host": "127.0.0.1",
+"proxy_port": "1080",
+"proxy_user": "nil",
+"proxy_pass": "nil"
+}
