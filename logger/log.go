@@ -36,3 +36,29 @@ func InitLog() {
 	}
 	Log.SetLevel(l)
 }
+
+// Error записывает сообщение об ошибке в лог
+func Error(args ...interface{}) {
+    Log.Error(args...)
+}
+
+// Вы также можете добавить дополнительные функции для других уровней ведения журнала, например:
+func Info(args ...interface{}) {
+    Log.Info(args...)
+}
+
+func Debug(args ...interface{}) {
+    Log.Debug(args...)
+}
+
+func Warn(args ...interface{}) {
+    Log.Warn(args...)
+}
+
+func Fatal(args ...interface{}) {
+    Log.Fatal(args...)
+}
+
+func Trace(args ...interface{}) {
+    Log.Trace(args...)
+}

@@ -1,6 +1,9 @@
 package gitlab_helper
 
 import (
+	"os/exec"
+    "path/filepath"
+	"errors"
 	"crypto/tls"
 	"log"
 	"net/http"
@@ -85,4 +88,22 @@ func GetProjectArchive(gitClient *gitlab.Client, gitlabProjectID int, format *st
 	}
 	return tempBody
 
+}
+
+func GetProjectID(gitClient *gitlab.Client, serviceName string) (int, error) {
+	projects := GetProjectsInGroup(gitClient, "2706")
+	projectsMap := GetProjectsMap(projects)
+	project, ok := projectsMap[strings.TrimSpace(serviceName)]
+	if !ok {
+		return 0, errors.New("Service not found in the GitLab group")
+	}
+	return project.ID, nil
+}
+
+func CloneRepo(repoURL, branch, cloneDir string) (string, error) {
+    cmd := exec.Command("git", "clone", "-b", branch, repoURL, cloneDir)
+    if err := cmd.Run(); err != nil {
+        return "", err
+    }
+    return filepath.Join(cloneDir, filepath.Base(repoURL)), nil
 }

@@ -42,6 +42,10 @@ type Configuration struct {
 	ProxyPort             string   `json:"proxy_port"`
 	ProxyUser             string   `json:"proxy_user"`
 	ProxyPass             string   `json:"proxy_pass"`
+	FrankensteinRepo      string   `json:"FrankensteinRepo"`
+	FrankProjectID        string   `json:"frank_project_id"`
+    FrankBranch           string   `json:"frank_branch"`
+	FrankServiceList      []string `json:"frank_service_list"`
 }
 
 func Init() {

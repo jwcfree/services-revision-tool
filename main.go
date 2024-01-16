@@ -2,6 +2,8 @@
 package main
 
 import (
+	"strings"
+	"path/filepath"
 	_ "embed"
 	"fmt"
 	"os"
@@ -27,9 +29,93 @@ func init() {
 	logger.InitLog()
 }
 
+func cloneMzServiceRepo(cfg *config.Configuration) (string, error) {
+    cloneDir := filepath.Join(cfg.Output_dir, "mz-service")
+    _, err := gitlab_helper.CloneRepo("https://git.gosuslugi.local/pgs2-rtlabs/source/mz-service", "dev", cloneDir)
+    if err != nil {
+        return "", err
+    }
+    return cloneDir, nil
+}
+
+func getServiceVersion(cloneDir, serviceName string) (string, error) {
+    versionFile := filepath.Join(cloneDir, serviceName, "version.txt")
+    version, err := os.ReadFile(versionFile)
+    if err != nil {
+        return "", err
+    }
+    return strings.TrimSpace(string(version)), nil
+}
+
+func cloneRepoForService(gitClient *gitlab.Client, cfg *config.Configuration, serviceName string) (string, error) {
+    cloneDir := filepath.Join(cfg.Output_dir, serviceName)
+
+    // Клонируем репозиторий
+    _, err := gitlab_helper.CloneRepo(cfg.FrankensteinRepo, "master", cloneDir)
+    if err != nil {
+        return "", err
+    }
+
+    // version, err := getServiceVersion(cloneDir, serviceName)
+    // if err != nil {
+    //     return "", err
+    // }
+
+    return cloneDir, nil
+}
+
+func processFrankenstein(svc string, cfg *config.Configuration, gitClient *gitlab.Client) error {
+    // Клонирование mz-service
+    _, err := cloneMzServiceRepo(cfg)
+    if err != nil {
+        logger.Error("Ошибка клонирования mz-service: ", err)
+        return err
+    }
+
+    // Клонирование mz-xsd-storage для сервиса франкенштейна
+    _, err = cloneRepoForService(gitClient, cfg, svc)
+    if err != nil {
+        logger.Error("Ошибка клонирования mz-xsd-storage: ", err)
+        return err
+    }
+
+    // Путь исходной директории сервиса франкенштейна (локальный путь)
+    sourcePath := filepath.Join(cfg.Output_dir, svc, svc)
+
+    // Путь назначения внутри mz-service
+    destinationPath := filepath.Join(cfg.Output_dir, "mz-service", "mz-xsd", svc)
+
+    // Копирование сервиса франкенштейна внутрь mz-service
+    err = services.CopyServiceSources(sourcePath, destinationPath)
+    if err != nil {
+        logger.Error("Ошибка копирования сервиса франкенштейна: ", err)
+        return err
+    }
+
+    // Запуск процесса сборки из mz-service
+    err = services.Build(svc)
+    if err != nil {
+        logger.Error("Ошибка в процессе сборки: ", err)
+        return err
+    }
+
+        return nil
+    }
+
 func processSvc(idx int, svc string, projectsMap map[string]*gitlab.Project, cfg *config.Configuration, gitClient *gitlab.Client, wg *sync.WaitGroup, semaphore chan struct{}) {
 	defer wg.Done()
-	if projectsMap[svc] != nil {
+
+	// Проверяем, является ли сервис франкенштейном
+	isFrankenstein := services.IsFrankensteinService(svc, cfg)
+	if isFrankenstein {
+		// Обработка сервиса франкенштейна
+		err := processFrankenstein(svc, cfg, gitClient)
+		if err != nil {
+			logger.Error("Ошибка при обработке сервиса 'франкенштейн': ", svc, ": ", err)
+			return
+		}
+	} else if projectsMap[svc] != nil {
+		// Обработка обычных сервисов
 		logger.Log.Debugf("service # %d: %s id: %d path: %v\n", idx, svc, projectsMap[svc].ID, projectsMap[svc].Path)
 		logger.Log.Infof("Processing %s service", svc)
 		apath := cfg.Output_dir + "/" + svc + "." + cfg.Archive_format
@@ -45,19 +131,14 @@ func processSvc(idx int, svc string, projectsMap map[string]*gitlab.Project, cfg
 			os.Exit(1)
 		}
 		logger.Log.Debugf("Finish process service %s", svc)
-		logger.Log.Debugf("Find dependencies for service %s", svc)
-
-		if err != nil {
-			logger.Log.Errorf("Could not build service %s, error: %v", svc, err)
+		} else {
+			logger.Log.Warnf("Project %s not found\n", svc)
+			services.UnknownProjects = append(services.UnknownProjects, svc)
 		}
-	} else {
-		logger.Log.Warnf("Project %s not found\n", svc)
-		services.UnknownProjects = append(services.UnknownProjects, svc)
+	
+		logger.Log.Infof("Finished processing %s service. Details in Readme.md file", svc)
+		<-semaphore
 	}
-
-	logger.Log.Infof("Finished processing %s service. Details in Readme.md file", svc)
-	<-semaphore
-}
 
 func main() {
 	if config.Version {

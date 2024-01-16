@@ -1,10 +1,16 @@
 {
 "gitlab_api_host" : "https://git.gosuslugi.local/api/v4",
 "output_dir" : "result",
-"service_list" : [
-	"idm"
+"frank_service_list": [
+	"mnsv-ervu-driving-registration-vehicle"
 ],
-"group_id": "1742",
+"service_list" : [
+	"mnsv-ervu-driving-registration-vehicle"
+],
+"group_id": "2706",
+"frank_project_id": "5621",
+"frank_branch": "master",
+"FrankensteinRepo": "https://git.gosuslugi.local/pgs2-rtlabs/source/mz-xsd-storage",
 "branch":"dev",
 "cache":true,
 "cache_dir": "cache",
@@ -14,7 +20,7 @@
 "max_parallelism": 2,
 "readme_template":"readme.md.tmpl",
 "rtl_search_repo_id": "2706",
-"upload_to_nexus": true,
+"upload_to_nexus": false,
 "nexus_url":"http://10.65.133.229:8081",
 "nexus_path":"/repository/pgs2-sources/services",
 "nexus_maven_url": "http://10.65.133.229:8081/repository/maven-public/",
